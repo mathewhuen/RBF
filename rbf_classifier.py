@@ -1,3 +1,7 @@
+import torch
+from torch import nn
+import torch.functional as F
+
 class RBF(nn.Module):
     """
     A pytorch RBF layer (a more general version of https://github.com/JeremyLinux/PyTorch-Radial-Basis-Function-Layer/blob/master/Torch%20RBF/torch_rbf.py)
