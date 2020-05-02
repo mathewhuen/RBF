@@ -2,9 +2,35 @@ class RBF(nn.Module):
     """
     A pytorch RBF layer (a more general version of https://github.com/JeremyLinux/PyTorch-Radial-Basis-Function-Layer/blob/master/Torch%20RBF/torch_rbf.py)
     Accepts any input shape.
+    
     """
     def __init__(self, d_in, d_out, k, basis_fnc='gaussian', init_args=None):#d_in and d_out must be tuples with first dimension corresponding to the squeezed shape of a single input to batch index
+        """
+        
+        Arguments
+        ---------
+        d_in: int,tuple
+            
+        
+        d_out: int
+            
+        
+        k: int
+            The number of RBF kernels to use.
+            
+        basis_fnc: str, optional
+            The type of kernel to use (phi). Default is gaussian.
+            
+        init_args:  dict, optional
+            A custom dictionary defining initialization for paramters. Default in None.
+            This dictionary must contain keys for kernel 'centers' and any other parameters used in the kernel function. Each key should map to another dictionary with keys 'fnc' and 'args' corresponding to an initialization function (eg, nn.init.normal_) and a kwargs dict for said initialization function, respectively.
+        
+        """
         super(RBF, self).__init__()
+        self.d_in = d_in if type(d_in)==tuple else (d_in,)
+        self.d_out = d_out
+        self.k = k
+        
         basis_fncs = {
             'gaussian':gaussian,
             'inverse_quadratic':inverse_quadratic
@@ -14,7 +40,7 @@ class RBF(nn.Module):
             'gaussian' : {
                 'gamma':{
                     'fnc':nn.init.constant_,
-                    'dims':(k,),
+                    'dims':(self.k,),
                     'args':{'val':1}
                 }
             },
@@ -22,14 +48,12 @@ class RBF(nn.Module):
             }
         }
         
-        self.d_in = d_in
-        self.d_out = d_out
-        self.k = k
+        
         
         self.basis_fnc = basis_fncs[basis_fnc]
         
         params = {}
-        params.update([('centers', nn.Parameter(torch.Tensor(1, *d_in, k))), 
+        params.update([('centers', nn.Parameter(torch.Tensor(1, *self.d_in, k))), 
                        *[(key, nn.Parameter(torch.Tensor(*(basis_fnc_params[basis_fnc][key]['dims'])))) for key in basis_fnc_params[basis_fnc].keys()]])
         self.params = nn.ParameterDict(params)
         
@@ -37,17 +61,14 @@ class RBF(nn.Module):
             init_args = {}
             init_args.update([('centers', {'fnc': nn.init.normal_, 'args':{'mean':0, 'std':1}}), 
                        *[(key, {'fnc':basis_fnc_params[basis_fnc][key]['fnc'], 'args':basis_fnc_params[basis_fnc][key]['args']}) for key in basis_fnc_params[basis_fnc].keys()]])
-        self.initialize_params(init_args)
+        self._initialize_params(init_args)
         
         self.net = nn.Sequential()#later set flag for this...I might want just output of rbf layer
-        self.net.add_module('rbf_weights', nn.Linear(k, d_out))
+        self.net.add_module('rbf_weights', nn.Linear(self.k, self.d_out))
         self.net.add_module('softmax', nn.Softmax(dim=1))#later add a threshold to this
         
-    def initialize_params(self, kwargs):
+    def _initialize_params(self, kwargs):
         for param in self.params.keys():
-#             print(param)
-#             print(self.params[param])
-#             print(kwargs[param]['args'])
             kwargs[param]['fnc'](self.params[param], **(kwargs[param]['args']))
             
     def forward(self, x):
