@@ -3,7 +3,7 @@ Some simple rbf layers and models
 
 
 
-![](rbf_centers.gif)
+![](rbf_centers.gif =200x200)
 
 
 
