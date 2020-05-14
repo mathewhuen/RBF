@@ -3,9 +3,9 @@ Some simple rbf layers and models
 
 
 
-![](rbf_centers.gif)
+<!-- ![](rbf_centers.gif) -->
 
-<img src="rbf_centers.gif" width="48">
+<img src="rbf_centers.gif" width="200">
 
 
 
